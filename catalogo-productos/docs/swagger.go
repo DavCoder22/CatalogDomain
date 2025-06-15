@@ -19,8 +19,10 @@
 
 package docs
 
-import _ "github.com/swaggo/files"
-import _ "github.com/swaggo/gin-swagger"
+import (
+	_ "github.com/swaggo/files"
+	_ "github.com/swaggo/gin-swagger"
+)
 
 // Dimensiones representa las dimensiones de un producto
 // swagger:model
@@ -29,8 +31,8 @@ import _ "github.com/swaggo/gin-swagger"
 // @property alto required
 // @property profundo required
 type Dimensiones struct {
-	Ancho   float64 `json:"ancho"`
-	Alto    float64 `json:"alto"`
+	Ancho    float64 `json:"ancho"`
+	Alto     float64 `json:"alto"`
 	Profundo float64 `json:"profundo"`
 }
 

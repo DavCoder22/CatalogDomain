@@ -1,0 +1,40 @@
+# Dependencias
+vendor/
+node_modules/
+
+# Binarios
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Archivos de configuración local
+.env
+*.tfvars
+
+# Archivos temporales
+*.log
+*.tmp
+
+# Archivos de IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Cache de Go
+go.sum
+
+# Docker
+.dockerignore
+.Dockerfile
+
+# Terraform state
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Archivos de credenciales
+*.pem
+*.key
+*.crt

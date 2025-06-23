@@ -7,6 +7,8 @@ toolchain go1.23.6
 require (
 	github.com/gin-gonic/gin v1.10.1
 	github.com/google/uuid v1.3.0
+	github.com/jinzhu/gorm v1.9.21
+	github.com/jinzhu/gorm/dialects/postgres v1.0.0
 )
 
 require (

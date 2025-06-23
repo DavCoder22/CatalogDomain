@@ -1,0 +1,37 @@
+name: Deploy to Test
+
+on:
+  push:
+    branches: [ test ]
+  pull_request:
+    branches: [ test ]
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
+
+jobs:
+  deploy-test:
+    runs-on: ubuntu-latest
+    environment: test
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run tests
+      run: npm test
+      
+    - name: Build
+      run: npm run build
+      
+    - name: Deploy to test environment
+      run: |
+        # Add your test deployment commands here
+        echo "🚀 Deploying to test environment..."
+        # Example: npm run deploy:test

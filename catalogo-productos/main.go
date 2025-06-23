@@ -5,9 +5,41 @@ import (
 	"net/http"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jinzhu/gorm"
+	"github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
+	"os"
 )
+
+var db *gorm.DB
+
+func initDB() error {
+	// Obtener las variables de entorno
+	postgresEndpoint := os.Getenv("POSTGRES_ENDPOINT")
+	if postgresEndpoint == "" {
+		return fmt.Errorf("POSTGRES_ENDPOINT no está configurado")
+	}
+
+	dsn := fmt.Sprintf(
+		"host=%s user=postgres password=postgres123 dbname=catalogo port=5432 sslmode=disable",
+		postgresEndpoint,
+	)
+
+	var err error
+	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return fmt.Errorf("error al conectar a PostgreSQL: %v", err)
+	}
+
+	// Crear la tabla si no existe
+	err = db.AutoMigrate(&Producto{})
+	if err != nil {
+		return fmt.Errorf("error al crear la tabla: %v", err)
+	}
+
+	return nil
+}
 
 // @title API de Catálogo de Productos
 // @version 1.0
@@ -69,27 +101,6 @@ type Producto struct {
 }
 
 var productos = []Producto{}
-
-func main() {
-	if err := setup(); err != nil {
-		log.Fatalf("Error al configurar: %v", err)
-	}
-
-	r := gin.Default()
-
-	// Rutas API
-	api := r.Group("/api/v1")
-	{
-		api.GET("/productos", getProducts)
-		api.GET("/productos/:id", getProduct)
-		api.POST("/productos", createProduct)
-		api.PUT("/productos/:id", updateProduct)
-		api.DELETE("/productos/:id", deleteProduct)
-	}
-
-	log.Printf("Iniciando servicio de productos en :8081")
-	r.Run(":8081")
-}
 
 func setup() error {
 	// Inicializar productos de ejemplo
@@ -178,51 +189,73 @@ func createProduct(c *gin.Context) {
 // @Description Actualiza un producto existente
 // @Tags productos
 // @Accept json
-// @Produce json
-// @Param id path string true "ID del producto"
-// @Param producto body docs.Producto true "Producto actualizado"
-// @Success 200 {object} docs.productoResponse
-// @Failure 404 {object} docs.errorResponse
-// @Failure 400 {object} docs.errorResponse
-// @Router /productos/{id} [put]
 func updateProduct(c *gin.Context) {
 	id := c.Param("id")
-	var producto docs.Producto
+	var producto Producto
 	if err := c.ShouldBindJSON(&producto); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
 		return
 	}
 
-	for i, p := range productos {
-		if p.ID == id {
-			productos[i] = producto
-			c.JSON(http.StatusOK, gin.H{
-				"data": producto,
+	// Buscar el producto existente
+	var existingProducto Producto
+	if err := db.First(&existingProducto, "id = ?", id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "Producto no encontrado",
 			})
 			return
 		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
-	c.JSON(http.StatusNotFound, gin.H{"error": "Producto no encontrado"})
+
+	// Actualizar el producto
+	existingProducto.Nombre = producto.Nombre
+	existingProducto.Descripcion = producto.Descripcion
+	existingProducto.PrecioBase = producto.PrecioBase
+	existingProducto.Dimensiones = producto.Dimensiones
+	existingProducto.Categoria = producto.Categoria
+	existingProducto.Estado = producto.Estado
+
+	if err := db.Save(&existingProducto).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, existingProducto)
 }
 
-// Eliminar un producto
-// @Summary Eliminar un producto
-// @Description Elimina un producto del catálogo
-// @Tags productos
-// @Accept json
-// @Produce json
-// @Param id path string true "ID del producto"
-// @Success 200 {object} docs.successResponse
-// @Failure 404 {object} docs.errorResponse
-// @Router /productos/{id} [delete]
 func deleteProduct(c *gin.Context) {
 	id := c.Param("id")
-	for i, p := range productos {
-		if p.ID == id {
-			productos = append(productos[:i], productos[i+1:]...)
-			c.JSON(http.StatusOK, gin.H{"message": "Producto eliminado"})
+	var producto Producto
+	if err := db.First(&producto, "id = ?", id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "Producto no encontrado",
+			})
 			return
 		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
-	c.JSON(http.StatusNotFound, gin.H{"error": "Producto no encontrado"})
+
+	if err := db.Delete(&producto).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Producto eliminado",
+	})
 }

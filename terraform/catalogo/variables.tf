@@ -1,8 +1,4 @@
-variable "region" {
-  description = "AWS region where the resources will be created"
-  type        = string
-  default     = "us-east-1"
-}
+
 
 variable "environment" {
   description = "Environment name (e.g., dev, staging, prod)"
@@ -10,22 +6,16 @@ variable "environment" {
   default     = "dev"
 }
 
-variable "aws_access_key_id" {
-  description = "AWS Access Key ID"
+variable "ami_id" {
+  description = "AMI ID for EC2 instances"
   type        = string
-  sensitive   = true
+  default     = "ami-0c2b8ca1dad447f8a"  # Amazon Linux 2 AMI (HVM), SSD Volume Type
 }
 
-variable "aws_secret_access_key" {
-  description = "AWS Secret Access Key"
+variable "key_name" {
+  description = "Name of the EC2 key pair"
   type        = string
-  sensitive   = true
-}
-
-variable "aws_session_token" {
-  description = "AWS Session Token"
-  type        = string
-  sensitive   = true
+  default     = "pc1"
 }
 
 variable "vpc_cidr" {
@@ -62,20 +52,10 @@ variable "public_subnets" {
   default     = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
 }
 
-variable "ami_id" {
-  description = "AMI ID for EC2 instances"
-  type        = string
-}
-
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
   default     = "t3.micro"
-}
-
-variable "key_name" {
-  description = "Name of the EC2 key pair"
-  type        = string
 }
 
 variable "git_repository_url" {

@@ -1,37 +1,60 @@
-name: Deploy to Test
+name: Deploy to Test Environment
 
 on:
   push:
     branches: [ test ]
   pull_request:
     branches: [ test ]
-  workflow_dispatch:  # Allows manual triggering from GitHub UI
+  workflow_dispatch:  # Permite activación manual desde la interfaz de GitHub
 
 jobs:
-  deploy-test:
+  test-and-deploy:
+    name: Test and Deploy
     runs-on: ubuntu-latest
     environment: test
     
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
     
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
+    - name: Set up Go
+      uses: actions/setup-go@v4
       with:
-        node-version: '18'
-        cache: 'npm'
+        go-version: '1.23'  # Versión específica usada en los Dockerfiles
     
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run tests
-      run: npm test
-      
-    - name: Build
-      run: npm run build
-      
-    - name: Deploy to test environment
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to Docker Hub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    
+    - name: Run unit tests for all services
       run: |
-        # Add your test deployment commands here
-        echo "🚀 Deploying to test environment..."
-        # Example: npm run deploy:test
+        echo "Running unit tests..."
+        cd catalogo-productos && go test -v ./... && cd ..
+        cd catalogo-materiales && go test -v ./... && cd ..
+        cd catalogo-filtros && go test -v ./... && cd ..
+    
+    - name: Build and push Docker images
+      if: github.event_name != 'pull_request'
+      run: |
+        echo "Building and pushing Docker images..."
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/catalogo-productos:test -f catalogo-productos/Dockerfile .
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/catalogo-materiales:test -f catalogo-materiales/Dockerfile .
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/catalogo-filtros:test -f catalogo-filtros/Dockerfile .
+        
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/catalogo-productos:test
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/catalogo-materiales:test
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/catalogo-filtros:test
+    
+    - name: Deploy to test environment
+      if: github.event_name != 'pull_request'
+      run: |
+        echo "🚀 Desplegando en entorno de prueba..."
+        # Aquí irían los comandos para desplegar en el entorno de prueba
+        # Por ejemplo, usando kubectl, docker-compose, o tu herramienta de despliegue preferida
+        echo "✅ Despliegue completado"

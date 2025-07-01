@@ -17,15 +17,21 @@ data "aws_vpc" "existing" {
 }
 
 # Subredes existentes
-data "aws_subnet" "public" {
+data "aws_subnets" "public" {
   filter {
     name   = "vpc-id"
     values = [data.aws_vpc.existing.id]
   }
+  
   filter {
     name   = "tag:Name"
-    values = ["public"]
+    values = ["public-*", "public"]
   }
+}
+
+data "aws_subnet" "public" {
+  for_each = toset(data.aws_subnets.public.ids)
+  id       = each.value
 }
 
 # Tabla de enrutamiento existente
@@ -80,7 +86,7 @@ resource "aws_security_group" "catalogo" {
 resource "aws_instance" "catalogo_productos" {
   ami           = var.ami_id
   instance_type = "t2.micro"
-  subnet_id     = data.aws_subnet.public.ids[0]
+  subnet_id     = element(tolist(data.aws_subnets.public.ids), 0)
   vpc_security_group_ids = [aws_security_group.catalogo.id]
   key_name      = var.key_name
 
@@ -113,7 +119,7 @@ EOF
 resource "aws_instance" "catalogo_materiales" {
   ami           = var.ami_id
   instance_type = "t2.micro"
-  subnet_id     = data.aws_subnet.public.ids[1]
+  subnet_id     = element(tolist(data.aws_subnets.public.ids), 1)
   vpc_security_group_ids = [aws_security_group.catalogo.id]
   key_name      = var.key_name
 

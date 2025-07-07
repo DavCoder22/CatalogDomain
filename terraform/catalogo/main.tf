@@ -13,7 +13,7 @@ provider "aws" {
 
 # VPC existente
 data "aws_vpc" "existing" {
-  id = "vpc-06eaaae70c3e6b168"
+  id = "vpc-0440f3de1664612d6"
 }
 
 # Subredes existentes

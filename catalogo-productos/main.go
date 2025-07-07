@@ -1,45 +1,18 @@
 package main
 
 import (
+	"catalogo-productos/docs"
 	"log"
 	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/jinzhu/gorm"
-	"github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/swaggo/gin-swagger"
-	"github.com/swaggo/gin-swagger/swaggerFiles"
-	"os"
+	"github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-var db *gorm.DB
-
-func initDB() error {
-	// Obtener las variables de entorno
-	postgresEndpoint := os.Getenv("POSTGRES_ENDPOINT")
-	if postgresEndpoint == "" {
-		return fmt.Errorf("POSTGRES_ENDPOINT no está configurado")
-	}
-
-	dsn := fmt.Sprintf(
-		"host=%s user=postgres password=postgres123 dbname=catalogo port=5432 sslmode=disable",
-		postgresEndpoint,
-	)
-
-	var err error
-	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		return fmt.Errorf("error al conectar a PostgreSQL: %v", err)
-	}
-
-	// Crear la tabla si no existe
-	err = db.AutoMigrate(&Producto{})
-	if err != nil {
-		return fmt.Errorf("error al crear la tabla: %v", err)
-	}
-
-	return nil
-}
+// Por ahora usamos almacenamiento en memoria
+// TODO: Implementar base de datos PostgreSQL
 
 // @title API de Catálogo de Productos
 // @version 1.0
@@ -68,7 +41,16 @@ func main() {
 	r := gin.Default()
 
 	// Documentación Swagger
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(files.Handler))
+
+	// Health check
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "healthy",
+			"service": "catalogo-productos",
+			"version": "1.0.0",
+		})
+	})
 
 	// Rutas API
 	api := r.Group("/api/v1")
@@ -85,8 +67,8 @@ func main() {
 }
 
 type Dimensiones struct {
-	Ancho   float64 `json:"ancho"`
-	Alto    float64 `json:"alto"`
+	Ancho    float64 `json:"ancho"`
+	Alto     float64 `json:"alto"`
 	Profundo float64 `json:"profundo"`
 }
 
@@ -111,8 +93,8 @@ func setup() error {
 			Descripcion: "Soporte para impresión 3D",
 			PrecioBase:  15.99,
 			Dimensiones: Dimensiones{
-				Ancho:   10.0,
-				Alto:    5.0,
+				Ancho:    10.0,
+				Alto:     5.0,
 				Profundo: 3.0,
 			},
 			Categoria: "Soportes",
@@ -199,63 +181,38 @@ func updateProduct(c *gin.Context) {
 		return
 	}
 
-	// Buscar el producto existente
-	var existingProducto Producto
-	if err := db.First(&existingProducto, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error": "Producto no encontrado",
+	// Buscar y actualizar el producto en el array
+	for i, p := range productos {
+		if p.ID == id {
+			producto.ID = id // Mantener el ID original
+			productos[i] = producto
+			c.JSON(http.StatusOK, gin.H{
+				"data": producto,
 			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
 	}
 
-	// Actualizar el producto
-	existingProducto.Nombre = producto.Nombre
-	existingProducto.Descripcion = producto.Descripcion
-	existingProducto.PrecioBase = producto.PrecioBase
-	existingProducto.Dimensiones = producto.Dimensiones
-	existingProducto.Categoria = producto.Categoria
-	existingProducto.Estado = producto.Estado
-
-	if err := db.Save(&existingProducto).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, existingProducto)
+	c.JSON(http.StatusNotFound, gin.H{
+		"error": "Producto no encontrado",
+	})
 }
 
 func deleteProduct(c *gin.Context) {
 	id := c.Param("id")
-	var producto Producto
-	if err := db.First(&producto, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"error": "Producto no encontrado",
+
+	// Buscar y eliminar el producto del array
+	for i, p := range productos {
+		if p.ID == id {
+			productos = append(productos[:i], productos[i+1:]...)
+			c.JSON(http.StatusOK, gin.H{
+				"message": "Producto eliminado",
 			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
 	}
 
-	if err := db.Delete(&producto).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Producto eliminado",
+	c.JSON(http.StatusNotFound, gin.H{
+		"error": "Producto no encontrado",
 	})
 }

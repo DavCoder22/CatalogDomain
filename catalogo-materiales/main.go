@@ -3,9 +3,31 @@ package main
 import (
 	"log"
 	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
+
+// @title API de Catálogo de Materiales
+// @version 1.0
+// @description API REST para gestión de materiales de impresión 3D
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8082
+// @BasePath /api/v1
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 
 // TipoMaterial representa los tipos de materiales disponibles
 type TipoMaterial string
@@ -18,31 +40,31 @@ const (
 // CaracteristicasMaterial representa las características técnicas de un material
 type CaracteristicasMaterial struct {
 	// Características comunes
-	Color            string  `json:"color"`
-	TemperaturaImpresion int    `json:"temperatura_impresion"` // °C
-	TemperaturaPlataforma int    `json:"temperatura_plataforma"` // °C
-	ResistenciaTensil float64 `json:"resistencia_tensil"`    // MPa
-	Dureza          float64 `json:"dureza"`    // Para resinas
-	
+	Color                 string  `json:"color"`
+	TemperaturaImpresion  int     `json:"temperatura_impresion"`  // °C
+	TemperaturaPlataforma int     `json:"temperatura_plataforma"` // °C
+	ResistenciaTensil     float64 `json:"resistencia_tensil"`     // MPa
+	Dureza                float64 `json:"dureza"`                 // Para resinas
+
 	// Características específicas de filamento
 	DiametroFilamento float64 `json:"diametro_filamento"` // mm
-	Densidad         float64 `json:"densidad"`    // g/cm³
-	
+	Densidad          float64 `json:"densidad"`           // g/cm³
+
 	// Características específicas de resina
-	Viscosidad       float64 `json:"viscosidad"`    // cP
-	TiempoCura       int     `json:"tiempo_cura"`    // segundos
-	Tolerancia       float64 `json:"tolerancia"`    // mm
+	Viscosidad float64 `json:"viscosidad"`  // cP
+	TiempoCura int     `json:"tiempo_cura"` // segundos
+	Tolerancia float64 `json:"tolerancia"`  // mm
 }
 
 // Material representa un material para impresión 3D
 type Material struct {
-	ID              string              `json:"id"`
-	Nombre          string              `json:"nombre"`
-	Tipo            TipoMaterial        `json:"tipo"`
-	Fabricante      string              `json:"fabricante"`
-	Disponible      bool                `json:"disponible"`
-	Stock           float64             `json:"stock"` // En metros para filamentos, en ml para resinas
-	PrecioPorUnidad float64             `json:"precio_por_unidad"`
+	ID              string                  `json:"id"`
+	Nombre          string                  `json:"nombre"`
+	Tipo            TipoMaterial            `json:"tipo"`
+	Fabricante      string                  `json:"fabricante"`
+	Disponible      bool                    `json:"disponible"`
+	Stock           float64                 `json:"stock"` // En metros para filamentos, en ml para resinas
+	PrecioPorUnidad float64                 `json:"precio_por_unidad"`
 	Caracteristicas CaracteristicasMaterial `json:"caracteristicas"`
 }
 
@@ -54,6 +76,18 @@ func main() {
 	}
 
 	r := gin.Default()
+
+	// Documentación Swagger
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(files.Handler))
+
+	// Health check
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "healthy",
+			"service": "catalogo-materiales",
+			"version": "1.0.0",
+		})
+	})
 
 	// Rutas API
 	api := r.Group("/api/v1")
@@ -83,12 +117,12 @@ func setup() error {
 			Stock:           1000.0, // metros
 			PrecioPorUnidad: 25.99,  // por kilogramo
 			Caracteristicas: CaracteristicasMaterial{
-				Color:            "Natural",
-				TemperaturaImpresion: 200,
+				Color:                 "Natural",
+				TemperaturaImpresion:  200,
 				TemperaturaPlataforma: 60,
-				ResistenciaTensil: 70.0,
-				DiametroFilamento: 1.75,
-				Densidad:         1.25,
+				ResistenciaTensil:     70.0,
+				DiametroFilamento:     1.75,
+				Densidad:              1.25,
 			},
 		},
 		{
@@ -100,14 +134,14 @@ func setup() error {
 			Stock:           5000.0, // ml
 			PrecioPorUnidad: 45.99,  // por litro
 			Caracteristicas: CaracteristicasMaterial{
-				Color:            "Transparente",
-				TemperaturaImpresion: 25,
+				Color:                 "Transparente",
+				TemperaturaImpresion:  25,
 				TemperaturaPlataforma: 25,
-				ResistenciaTensil: 75.0,
-				Dureza:          70,
-				Viscosidad:       1000,
-				TiempoCura:       6,
-				Tolerancia:       0.05,
+				ResistenciaTensil:     75.0,
+				Dureza:                70,
+				Viscosidad:            1000,
+				TiempoCura:            6,
+				Tolerancia:            0.05,
 			},
 		},
 	}

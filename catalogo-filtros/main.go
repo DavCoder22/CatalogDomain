@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,20 +12,29 @@ type Busqueda struct {
 	Query       string `json:"query"`
 	Categoria   string `json:"categoria"`
 	Dimensiones struct {
-		MinAncho  float64 `json:"min_ancho"`
-		MaxAncho  float64 `json:"max_ancho"`
-		MinAlto   float64 `json:"min_alto"`
-		MaxAlto   float64 `json:"max_alto"`
+		MinAncho    float64 `json:"min_ancho"`
+		MaxAncho    float64 `json:"max_ancho"`
+		MinAlto     float64 `json:"min_alto"`
+		MaxAlto     float64 `json:"max_alto"`
 		MinProfundo float64 `json:"min_profundo"`
 		MaxProfundo float64 `json:"max_profundo"`
 	} `json:"dimensiones"`
-	PrecioMin   float64 `json:"precio_min"`
-	PrecioMax   float64 `json:"precio_max"`
+	PrecioMin    float64 `json:"precio_min"`
+	PrecioMax    float64 `json:"precio_max"`
 	TipoMaterial string  `json:"tipo_material"`
 }
 
 func main() {
 	r := gin.Default()
+
+	// Health check
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "healthy",
+			"service": "catalogo-filtros",
+			"version": "1.0.0",
+		})
+	})
 
 	// Rutas API
 	api := r.Group("/api/v1")
@@ -40,16 +50,16 @@ func main() {
 		c.Next()
 	})
 
-	log.Printf("Iniciando servicio de filtros y búsqueda en :8084")
-	r.Run(":8084")
+	log.Printf("Iniciando servicio de filtros y búsqueda en :8083")
+	r.Run(":8083")
 }
 
 func buscar(c *gin.Context) {
 	log.Printf("[GET /buscar] Endpoint de búsqueda GET")
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Endpoint de búsqueda GET",
-		"info": "Usar POST para realizar búsquedas con filtros",
-		"status": "ok",
+		"info":    "Usar POST para realizar búsquedas con filtros",
+		"status":  "ok",
 	})
 }
 
@@ -62,8 +72,8 @@ func getBusqueda(c *gin.Context) {
 
 func aplicarFiltros(c *gin.Context) {
 	var filtros struct {
-		Categoria   string `json:"categoria"`
-		PrecioMax   float64 `json:"precio_max"`
+		Categoria string  `json:"categoria"`
+		PrecioMax float64 `json:"precio_max"`
 	}
 
 	if err := c.ShouldBindJSON(&filtros); err != nil {

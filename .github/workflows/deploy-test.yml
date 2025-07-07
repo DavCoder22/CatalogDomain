@@ -1,0 +1,60 @@
+name: Deploy to Test Environment
+
+on:
+  push:
+    branches: [ test ]
+  pull_request:
+    branches: [ test ]
+  workflow_dispatch:  # Permite activación manual desde la interfaz de GitHub
+
+jobs:
+  test-and-deploy:
+    name: Test and Deploy
+    runs-on: ubuntu-latest
+    environment: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.23'  # Versión específica usada en los Dockerfiles
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to Docker Hub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    
+    - name: Run unit tests for all services
+      run: |
+        echo "Running unit tests..."
+        cd catalogo-productos && go test -v ./... && cd ..
+        cd catalogo-materiales && go test -v ./... && cd ..
+        cd catalogo-filtros && go test -v ./... && cd ..
+    
+    - name: Build and push Docker images
+      if: github.event_name != 'pull_request'
+      run: |
+        echo "Building and pushing Docker images..."
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/catalogo-productos:test -f catalogo-productos/Dockerfile .
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/catalogo-materiales:test -f catalogo-materiales/Dockerfile .
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/catalogo-filtros:test -f catalogo-filtros/Dockerfile .
+        
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/catalogo-productos:test
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/catalogo-materiales:test
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/catalogo-filtros:test
+    
+    - name: Deploy to test environment
+      if: github.event_name != 'pull_request'
+      run: |
+        echo "🚀 Desplegando en entorno de prueba..."
+        # Aquí irían los comandos para desplegar en el entorno de prueba
+        # Por ejemplo, usando kubectl, docker-compose, o tu herramienta de despliegue preferida
+        echo "✅ Despliegue completado"

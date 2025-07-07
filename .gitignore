@@ -1,0 +1,115 @@
+# Binarios para cada módulo
+dist/
+bin/
+
+# Archivos generados por Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Directorio de dependencias de Go
+vendor/
+
+# Archivos de configuración local
+.env
+*.env
+
+# Archivos específicos de Go
+# Archivos de depuración
+debug/
+
+# Archivos de test con sufijo _test
+*_test.go
+
+# Archivos de cobertura de código
+coverage.out
+coverage.html
+
+# Archivos generados por go test
+*.test
+
+# Archivos generados por go build
+*-packr.go
+
+# Archivos generados por go-swagger
+*_gen.go
+
+# Archivos específicos de Go Modules
+go.work
+
+# Directorios de dependencias de Go
+**/vendor/
+
+# Archivos de IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Linux
+*~
+.directory
+.Trash-*/
+
+# Logs
+*.log
+
+# Docker
+.dockerignore
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IntelliJ
+.idea/
+*.iml
+
+# Archivos temporales
+*.tmp
+*.bak
+*.swp
+*~
+
+# Archivos de documentación generados
+**/docs/
+
+# Archivos de configuración local de cada módulo
+**/.env
+**/*.local
+
+# Archivos de configuración de GoLand
+.idea/
+*.iml
+
+# Archivos específicos de cada submódulo
+**/bin/
+**/dist/
